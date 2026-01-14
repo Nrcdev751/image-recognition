@@ -12,7 +12,7 @@ export const useCamera = () => {
       });
       setStream(mediaStream);
     } catch (err) {
-      setError("Unable to access camera. Please check permissions.");
+      setError("ไม่สามารถเข้าถึงกล้องได้ โปรดตรวจสอบสิทธิ์การใช้งาน");
       console.error(err);
     }
   }, []);

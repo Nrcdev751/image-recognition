@@ -15,7 +15,7 @@ const App: React.FC = () => {
   // State
   const [stage, setStage] = useState<Stage>('welcome');
   const [registeredUsers, setRegisteredUsers] = useState<User[]>([]);
-  
+
   // Registration State
   const [currentName, setCurrentName] = useState('');
   const [currentData, setCurrentData] = useState<string | null>(null);
@@ -32,7 +32,7 @@ const App: React.FC = () => {
   // Actions
   const handleStartCamera = async () => {
     await startCamera();
-    setStage('training'); 
+    setStage('training');
   };
 
   const handleCaptureFace = () => {
@@ -65,13 +65,13 @@ const App: React.FC = () => {
 
   const handleScanFace = async () => {
     if (!videoRef.current || registeredUsers.length === 0) return;
-    
+
     const captured = captureFrame(videoRef.current);
     if (captured) {
       setTestData(captured);
       setScanStatus('scanning');
       setScanResult(null);
-      
+
       let bestMatch: ScanResult = { name: '', score: 0 };
 
       // Compare against all users
@@ -110,13 +110,13 @@ const App: React.FC = () => {
       <Header />
 
       <div className="w-full max-w-4xl bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative min-h-[600px] flex flex-col transition-all duration-500">
-        
+
         {stage === 'welcome' && (
           <WelcomeStage onStart={handleStartCamera} error={cameraError} />
         )}
 
         {stage === 'list' && (
-          <ListStage 
+          <ListStage
             users={registeredUsers}
             onAddUser={() => setStage('training')}
             onDeleteUser={handleDeleteUser}
@@ -126,7 +126,7 @@ const App: React.FC = () => {
         )}
 
         {stage === 'training' && (
-          <TrainingStage 
+          <TrainingStage
             videoRef={videoRef}
             stream={stream}
             currentName={currentName}
@@ -137,14 +137,14 @@ const App: React.FC = () => {
         )}
 
         {stage === 'processing' && (
-          <ProcessingStage 
+          <ProcessingStage
             currentName={currentName}
             onComplete={handleSaveUser}
           />
         )}
 
         {stage === 'testing' && (
-          <TestingStage 
+          <TestingStage
             videoRef={videoRef}
             stream={stream}
             capturedImage={testData}
@@ -157,9 +157,9 @@ const App: React.FC = () => {
         )}
 
       </div>
-      
+
       <div className="mt-8 text-slate-600 text-xs font-mono">
-        SYSTEM STATUS: ONLINE | SECURE CONNECTION
+        สถานะระบบ: ออนไลน์ | การเชื่อมต่อปลอดภัย
       </div>
     </div>
   );
