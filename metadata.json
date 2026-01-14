@@ -1,0 +1,7 @@
+{
+  "name": "Face Vault AI",
+  "description": "A browser-based pixel comparison facial recognition laboratory.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
