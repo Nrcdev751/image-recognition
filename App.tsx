@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useCamera } from './hooks/useCamera';
 import { captureFrame, compareImages } from './utils/faceLogic';
 import { Stage, User, ScanResult, ScanStatus } from './types';
@@ -15,6 +15,19 @@ const App: React.FC = () => {
   // State
   const [stage, setStage] = useState<Stage>('welcome');
   const [registeredUsers, setRegisteredUsers] = useState<User[]>([]);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+
+  useEffect(() => {
+    const initModels = async () => {
+      try {
+        await import('./utils/faceLogic').then(mod => mod.loadModels());
+        setModelsLoaded(true);
+      } catch (e) {
+        console.error("Failed to load models", e);
+      }
+    };
+    initModels();
+  }, []);
 
   // Registration State
   const [currentName, setCurrentName] = useState('');
@@ -112,7 +125,14 @@ const App: React.FC = () => {
       <div className="w-full max-w-4xl bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative min-h-[600px] flex flex-col transition-all duration-500">
 
         {stage === 'welcome' && (
-          <WelcomeStage onStart={handleStartCamera} error={cameraError} />
+          modelsLoaded ? (
+            <WelcomeStage onStart={handleStartCamera} error={cameraError} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full min-h-[600px] text-cyan-400">
+              <div className="animate-spin mb-4 text-4xl">⏳</div>
+              <div>Initializing AI Models...</div>
+            </div>
+          )
         )}
 
         {stage === 'list' && (
@@ -139,6 +159,7 @@ const App: React.FC = () => {
         {stage === 'processing' && (
           <ProcessingStage
             currentName={currentName}
+            imageData={currentData}
             onComplete={handleSaveUser}
           />
         )}

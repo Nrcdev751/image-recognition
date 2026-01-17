@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes slide-scan {
+  0% { transform: translate(0, 0); }
+  12% { transform: translate(300%, 0); }
+  25% { transform: translate(300%, 100%); }
+  37% { transform: translate(0, 100%); }
+  50% { transform: translate(0, 200%); }
+  62% { transform: translate(300%, 200%); }
+  75% { transform: translate(300%, 300%); }
+  87% { transform: translate(0, 300%); }
+  100% { transform: translate(0, 0); }
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
+
+.animate-slide-scan {
+  animation: slide-scan 6s linear infinite;
+}
+
+.animate-slide-scan-once {
+  animation: slide-scan 6s linear 1 forwards;
+  animation-fill-mode: forwards;
+}
