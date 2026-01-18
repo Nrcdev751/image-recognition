@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useCamera } from './hooks/useCamera';
-import { captureFrame, compareImages } from './utils/faceLogic';
+import { captureFrame, compareImages, getDescriptor, compareDescriptors } from './utils/faceLogic';
 import { Stage, User, ScanResult, ScanStatus } from './types';
 
 // Component Imports
@@ -10,6 +11,7 @@ import { TrainingStage } from './components/TrainingStage';
 import { ProcessingStage } from './components/ProcessingStage';
 import { ListStage } from './components/ListStage';
 import { TestingStage } from './components/TestingStage';
+import { ZipUploadStage } from './components/ZipUploadStage';
 
 const App: React.FC = () => {
   // State
@@ -57,12 +59,16 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     if (currentName && currentData) {
+      // Calculate descriptor for single add
+      const descriptor = await getDescriptor(currentData);
+
       const newUser: User = {
         id: Date.now(),
         name: currentName,
-        data: currentData
+        data: currentData,
+        descriptor: descriptor || undefined
       };
       setRegisteredUsers([...registeredUsers, newUser]);
       // Reset
@@ -85,17 +91,24 @@ const App: React.FC = () => {
       setScanStatus('scanning');
       setScanResult(null);
 
+      // Get descriptor for the probe image ONCE
+      const probeDesc = await getDescriptor(captured);
+
       let bestMatch: ScanResult = { name: '', score: 0 };
 
-      // Compare against all users
-      for (const user of registeredUsers) {
-        const score = await compareImages(user.data, captured);
-        if (score > bestMatch.score) {
-          bestMatch = { name: user.name, score: score };
+      if (probeDesc) {
+        // Compare against all users using fast vector math
+        for (const user of registeredUsers) {
+          if (user.descriptor) {
+            const score = compareDescriptors(user.descriptor, probeDesc);
+            if (score > bestMatch.score) {
+              bestMatch = { name: user.name, score: score };
+            }
+          }
         }
       }
 
-      // Artificial delay for dramatic effect
+      // Artificial delay for dramatic effect (reduced to 1s for better feel now that it's fast)
       setTimeout(() => {
         if (bestMatch.score > 65) {
           setScanResult(bestMatch);
@@ -104,7 +117,7 @@ const App: React.FC = () => {
           setScanResult('mismatch');
           setScanStatus('mismatch');
         }
-      }, 2000);
+      }, 1000);
     }
   };
 
@@ -116,6 +129,26 @@ const App: React.FC = () => {
     setScanResult(null);
     setTestData(null);
     setScanStatus('idle');
+  };
+
+  const handleZipSave = async (newUsers: { name: string; data: string }[]) => {
+    const startId = Date.now();
+
+    // Process all descriptors in parallel
+    const usersWithIds: User[] = await Promise.all(
+      newUsers.map(async (u, idx) => {
+        const descriptor = await getDescriptor(u.data);
+        return {
+          id: startId + idx,
+          name: u.name,
+          data: u.data,
+          descriptor: descriptor || undefined
+        };
+      })
+    );
+
+    setRegisteredUsers(prev => [...prev, ...usersWithIds]);
+    setStage('list');
   };
 
   return (
@@ -142,6 +175,14 @@ const App: React.FC = () => {
             onDeleteUser={handleDeleteUser}
             onTest={() => { setScanStatus('idle'); setTestData(null); setScanResult(null); setStage('testing'); }}
             onReset={handleResetAll}
+            onImportZip={() => setStage('zip-upload')}
+          />
+        )}
+
+        {stage === 'zip-upload' && (
+          <ZipUploadStage
+            onSave={handleZipSave}
+            onCancel={() => setStage('list')}
           />
         )}
 
@@ -153,6 +194,12 @@ const App: React.FC = () => {
             setName={setCurrentName}
             onCapture={handleCaptureFace}
             onCancel={() => { setCurrentName(''); setStage('list'); }}
+            onBatchComplete={(images, name) => {
+              // Reuse the zip logic or create similar
+              const users = images.map(img => ({ name, data: img }));
+              handleZipSave(users); // Reusing handleZipSave is perfect here
+              setCurrentName('');
+            }}
           />
         )}
 

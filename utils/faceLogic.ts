@@ -48,7 +48,7 @@ export const captureFrame = (video: HTMLVideoElement): string | null => {
  * Extracts a face descriptor (128-float vector) from an image source.
  * Returns null if no face is detected.
  */
-const extractDescriptor = async (imageSrc: string): Promise<Float32Array | null> => {
+export const getDescriptor = async (imageSrc: string): Promise<Float32Array | null> => {
   const img = await faceapi.fetchImage(imageSrc);
   const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
   
@@ -59,17 +59,10 @@ const extractDescriptor = async (imageSrc: string): Promise<Float32Array | null>
 };
 
 /**
- * Compares two images using face-api.js descriptors.
+ * Compares two face descriptors.
  * Returns a score from 0 to 100.
  */
-export const compareImages = async (img1Src: string, img2Src: string): Promise<number> => {
-  try {
-    const desc1 = await extractDescriptor(img1Src);
-    if (!desc1) return 0; // No face in first image
-
-    const desc2 = await extractDescriptor(img2Src);
-    if (!desc2) return 0; // No face in second image
-
+export const compareDescriptors = (desc1: Float32Array, desc2: Float32Array): number => {
     const distance = faceapi.euclideanDistance(desc1, desc2);
     
     // Distance usually ranges from 0 (match) to 1+ (diff).
@@ -88,6 +81,21 @@ export const compareImages = async (img1Src: string, img2Src: string): Promise<n
     score = Math.max(0, Math.min(100, score));
     
     return score;
+};
+
+/**
+ * Compares two images using face-api.js descriptors.
+ * Returns a score from 0 to 100.
+ */
+export const compareImages = async (img1Src: string, img2Src: string): Promise<number> => {
+  try {
+    const desc1 = await getDescriptor(img1Src);
+    if (!desc1) return 0; // No face in first image
+
+    const desc2 = await getDescriptor(img2Src);
+    if (!desc2) return 0; // No face in second image
+
+    return compareDescriptors(desc1, desc2);
   } catch (error) {
     console.error("Comparison error:", error);
     return 0;

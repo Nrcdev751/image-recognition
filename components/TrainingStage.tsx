@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { captureFrame } from '../utils/faceLogic';
 
 interface Props {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -7,14 +8,92 @@ interface Props {
   setName: (name: string) => void;
   onCapture: () => void;
   onCancel: () => void;
+  onBatchComplete: (images: string[], name: string) => void;
 }
 
-export const TrainingStage: React.FC<Props> = ({ videoRef, stream, currentName, setName, onCapture, onCancel }) => {
+export const TrainingStage: React.FC<Props> = ({ videoRef, stream, currentName, setName, onCapture, onCancel, onBatchComplete }) => {
+  const [batchImages, setBatchImages] = useState<string[]>([]);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startCapturing = (e: React.SyntheticEvent) => {
+    // Prevent default touch actions like scroll
+    if (e.type === 'touchstart') {
+      // e.preventDefault(); 
+    }
+
+    if (!currentName.trim() || !videoRef.current) return;
+
+    // If we already have batch images, we are in "Batch Mode", so any press adds to it.
+    if (batchImages.length > 0) {
+      setIsCapturing(true);
+      // Immediate capture for responsiveness
+      const frame = captureFrame(videoRef.current);
+      if (frame) setBatchImages(prev => [...prev, frame]);
+
+      intervalRef.current = setInterval(() => {
+        if (videoRef.current) {
+          const newFrame = captureFrame(videoRef.current);
+          if (newFrame) setBatchImages(prev => [...prev, newFrame]);
+        }
+      }, 200);
+      return;
+    }
+
+    // Otherwise, we wait to see if it's a hold or a click
+    timeoutRef.current = setTimeout(() => {
+      setIsCapturing(true);
+      // Start batch mode logic
+      const frame = captureFrame(videoRef.current!);
+      if (frame) setBatchImages(prev => [...prev, frame]);
+
+      intervalRef.current = setInterval(() => {
+        if (videoRef.current) {
+          const newFrame = captureFrame(videoRef.current);
+          if (newFrame) setBatchImages(prev => [...prev, newFrame]);
+        }
+      }, 200);
+    }, 500); // 500ms threshold for "Hold"
+  };
+
+  const stopCapturing = () => {
+    if (!currentName.trim()) return;
+    // Clear the hold timer
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    // Stop interval if it was running
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (isCapturing) {
+      // We were in hold mode, just stop
+      setIsCapturing(false);
+    } else {
+      // We never entered hold mode, so it was a CLICK.
+      // But only if we aren't already in batch mode (handled in startCapturing early exit)
+      // Actually, if batchImages.length > 0, we did early exit in startCapturing setting isCapturing=true.
+      // So this 'else' block only hit if batchImages.length === 0 AND we released before 500ms.
+      if (batchImages.length === 0) {
+        onCapture();
+      }
+    }
+  };
 
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
     }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, [stream, videoRef]);
 
   return (
@@ -54,13 +133,36 @@ export const TrainingStage: React.FC<Props> = ({ videoRef, stream, currentName, 
         />
 
         <button
-          onClick={onCapture}
+          onMouseDown={startCapturing}
+          onMouseUp={stopCapturing}
+          onMouseLeave={stopCapturing}
+          onTouchStart={startCapturing}
+          onTouchEnd={stopCapturing}
           disabled={!currentName.trim()}
-          className={`w-full py-5 rounded-3xl font-black text-lg transition-all flex items-center justify-center gap-3 ${currentName.trim() ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-xl hover:-translate-y-1' : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
+          className={`relative w-full py-5 rounded-3xl font-black text-lg transition-all flex items-center justify-center gap-3 select-none active:scale-95 ${currentName.trim()
+            ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-xl'
+            : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
             }`}
         >
-          บันทึกภาพใบหน้า
+          {batchImages.length > 0 ? (
+            <span>Hold to add more ({batchImages.length})</span>
+          ) : (
+            <span>Hold to Train / Click to Capture</span>
+          )}
+
+          {isCapturing && (
+            <div className="absolute inset-0 rounded-3xl border-2 border-white/50 animate-ping"></div>
+          )}
         </button>
+
+        {batchImages.length > 0 && (
+          <button
+            onClick={() => onBatchComplete(batchImages, currentName)}
+            className="w-full mt-3 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold uppercase tracking-wide transition-all shadow-lg animate-pulse"
+          >
+            Save {batchImages.length} Images
+          </button>
+        )}
 
         <button onClick={onCancel} className="w-full mt-4 text-xs text-slate-500 hover:text-slate-300 transition-colors">
           ยกเลิกและกลับสู่รายการ

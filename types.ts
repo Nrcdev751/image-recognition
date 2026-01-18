@@ -1,9 +1,10 @@
-export type Stage = 'welcome' | 'training' | 'processing' | 'list' | 'testing';
+export type Stage = 'welcome' | 'training' | 'processing' | 'list' | 'testing' | 'zip-upload';
 
 export interface User {
   id: number;
   name: string;
   data: string; // Base64 image string
+  descriptor?: Float32Array; // Cached face embedding
 }
 
 export interface ScanResult {
