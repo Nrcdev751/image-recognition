@@ -8,7 +8,7 @@ export const Header: React.FC = () => {
         <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Face Vault v3.0</span>
       </div>
       <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-br from-white to-slate-500 uppercase tracking-tighter">
-        ทดสอบการแสกนใบหน้า
+        ทดสอบการสแกนใบหน้า
       </h1>
     </div>
   );
