@@ -34,9 +34,7 @@ export const TestingStage: React.FC<Props> = ({
 
   return (
     <div className="p-8 lg:p-12 text-center flex flex-col flex-grow h-full">
-      <h2 className="text-2xl font-black mb-8 uppercase tracking-widest flex items-center justify-center gap-3 text-white">
-        <Search className="text-cyan-400" /> Identity Search
-      </h2>
+
 
       <div className="flex flex-col md:flex-row gap-8 justify-center items-center mb-8 flex-grow">
         {/* Scanner Frame */}
@@ -73,8 +71,7 @@ export const TestingStage: React.FC<Props> = ({
           {result === 'mismatch' && (
             <div className="absolute inset-0 bg-red-600/60 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-zoom-in">
               <XCircle size={50} className="text-white mb-2" />
-              <h3 className="text-xl font-black text-white uppercase">การเข้าถึงถูกปฏิเสธ !!</h3>
-              <p className="text-white/80 text-sm font-bold">คุณไม่มีสิทธิเข้าถึง</p>
+              <h3 className="text-xl font-black text-white uppercase">คุณไม่มีสิทธิ์เข้าถึง   !!</h3>
             </div>
           )}
         </div>
@@ -87,7 +84,7 @@ export const TestingStage: React.FC<Props> = ({
             onClick={onScan}
             className="w-full bg-cyan-600 text-white py-5 rounded-[2rem] font-black text-xl hover:bg-cyan-500 shadow-xl active:scale-95 transition-all uppercase"
           >
-            Scan Identity
+            Scan
           </button>
         )}
 
@@ -95,7 +92,7 @@ export const TestingStage: React.FC<Props> = ({
           <div className="flex flex-col gap-4 animate-fade-in">
             <p className="text-xs text-slate-400 italic">
               {result === 'mismatch'
-                ? "No matching pixel patterns found in the database above threshold."
+                ? ""
                 : `Highest correlation found with subject "${result.name}".`}
             </p>
             <div className="flex gap-2">
